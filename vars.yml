@@ -1,0 +1,31 @@
+---
+############################################################################
+## RabbitMQ Settings
+############################################################################
+rabbitmq_server: <RabbitMQ Server Hostname>
+rabbitmq_password: <RabbitMQ Password>
+rabbitmq_port: 5671
+rabbitmq_vhost: /sensu
+rabbitmq_user: sensu
+rabbitmq_cert_path: /etc/sensu/ssl/
+rabbitmq_key_path: /etc/sensu/ssl/
+rabbitmq_cert: cert.pem
+rabbitmq_key: key.pem
+
+############################################################################
+## Sensu Client/Plugin Settings
+############################################################################
+
+## For HTTP check
+sensu_client_name: "{{ ansible_nodename }}"
+sensu_client_address: "{{ ansible_host }}"
+sensu_client_http_url: http://{{ ansible_nodename }}
+sensu_client_http_query: HTTP STATUS CHECK
+
+## For database health checks
+sensu_client_mysql_root_user: root
+sensu_client_mysql_host: localhost
+sensu_client_mysql_db: mysql
+sensu_client_mysql_user: check
+sensu_client_mysql_user_priv: mysql.*:SELECT
+sensu_client_mysql_pass: "{{ lookup('password', 'credentials/' + ansible_nodename + '/mysqlpassword length=25 chars=ascii_letters,digits,hexdigits,punctuation') }}"

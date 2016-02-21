@@ -1,0 +1,84 @@
+---
+## Add the Sensu APT key
+- name: Add the APT key for the Sensu repository
+  apt_key: url=http://repos.sensuapp.org/apt/pubkey.gpg state=present
+
+## Add the Sensu repository
+- name: Add the Sensu Repository
+  apt_repository: repo='deb http://repos.sensuapp.org/apt sensu main' state=present update_cache=true
+
+## Install Sensu
+- name: Install Sensu
+  apt: name=sensu state=present
+
+## Install python-mysqldb, ruby, ruby-dev, make
+- name: Install ruby, ruby-dev, build-essential, libmysqlclient-dev and python-mysqldb
+  apt: name={{ item }} state=present
+  with_items: 
+    - ruby
+    - ruby-dev
+    - build-essential
+    - python-mysqldb
+    - libmysqlclient-dev
+
+## Install all of the needed Sensu plugins
+- name: Install all of the needed Sensu plugins
+  gem: name={{ item }} state=latest user_install=no
+  with_items:
+    - sensu-plugin
+    - sensu-plugins-cpu-checks 
+    - sensu-plugins-disk-checks
+    - sensu-plugins-http
+    - sensu-plugins-mysql
+
+## Create the directories for the ssl certifcate and key
+- name: Create directories for the SSL certifcate and PEM key
+  file: path={{ item }} state=directory mode=744 owner=root group=root
+  with_items:
+    - '{{ rabbitmq_cert_path }}'
+    - '{{ rabbitmq_key_path }}'
+
+## Copy the SSL cert
+- name: Copy SSL Certificate to {{ rabbitmq_cert_path }}
+  copy: src={{ rabbitmq_cert }} dest={{ rabbitmq_cert_path }}{{ rabbitmq_cert }} mode=600 owner=sensu group=sensu
+
+## Copy the PEM key
+- name: Copy PEM Key to {{ rabbitmq_key_path }}
+  copy: src={{ rabbitmq_key }} dest={{ rabbitmq_key_path }}{{ rabbitmq_key }} mode=600 owner=sensu group=sensu
+
+## Copy the config.json file
+- name: Copy the config.json file (for RabbitMQ) to /etc/sensu/config.json
+  action: template src=config.json.j2 dest=/etc/sensu/config.json
+
+## Copy the client.json config file
+- name: Copy the client.json file to /etc/sensu/conf.d/client.json
+  action: template src=client.json.j2 dest=/etc/sensu/conf.d/client.json
+
+## Copy all of the Sensu plugins
+- name: Copy all of the Sensu plugins to /etc/sensu/plugins/
+  copy: src=plugins/ directory_mode=yes dest=/etc/sensu/plugins/ mode=755 owner=sensu group=sensu
+
+## chown/chmod the files
+- name: chown and chmod /etc/sensu
+  command: '{{ item }}'
+  with_items: 
+    - chown -R sensu. /etc/sensu 
+    - chmod -R 755 /etc/sensu
+    - chmod 600 {{ rabbitmq_cert_path }}{{ rabbitmq_cert }}
+    - chmod 600 {{ rabbitmq_key_path }}{{ rabbitmq_key }}
+
+## Create the MySQL user for database health checks
+- name: Create MySQL user for database health checks
+  mysql_user: >
+    login_user={{ sensu_client_mysql_root_user }} 
+    login_password={{ sensu_client_mysql_root_pass }} 
+    name={{ sensu_client_mysql_user }} 
+    password={{ sensu_client_mysql_pass }} 
+    priv={{ sensu_client_mysql_user_priv }} 
+    state=present    
+
+- name: Enable the Sensu client
+  service: name=sensu-client enabled=yes
+
+- name: Start the Sensu client
+  service: name=sensu-client state=started

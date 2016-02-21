@@ -1,0 +1,35 @@
+{
+  "client": {
+    "safe_mode": false,
+    "name": "{{ sensu_client_name }}",
+    "address": "{{ sensu_client_address }}",
+    "subscriptions": [
+        "cpu",
+        "memory",
+        "mysql",
+        "disk",
+        "http"
+    ],
+    
+    "keepalive": {
+        "handlers": ["default","slack","mailer"],
+        "thresholds": {"warning": 60, "critical": 90},
+        "notification": "Host could not be reached",
+        "response_window": "Immediate",
+        "playbook": "There is no playbook for this alert yet"
+    },
+
+    "http": {
+        "url": "{{ sensu_client_http_url }}",
+        "query": "{{ sensu_client_http_query }}",
+        "timeout": 3
+    },
+
+    "mysql": {
+        "host": "{{ sensu_client_mysql_host }}",
+        "database": "{{ sensu_client_mysql_db }}",
+        "user": "{{ sensu_client_mysql_user }}",
+        "password": "{{ sensu_client_mysql_pass }}"
+    }
+  }
+}

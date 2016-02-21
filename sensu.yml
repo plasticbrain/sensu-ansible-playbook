@@ -1,0 +1,14 @@
+---
+- hosts: sensu
+  remote_user: root
+
+  roles:
+    - sensu
+
+  vars_prompt:
+    - name: "sensu_client_mysql_root_pass"
+      prompt: "Enter MySQL root password (to create health check MySQL user)"
+      private: yes
+
+  vars_files:
+    - vars.yml
